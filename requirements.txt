@@ -1,0 +1,7 @@
+pandas
+streamlit
+seaborn
+transformers
+torch
+mistral_inference
+python-dotenv
