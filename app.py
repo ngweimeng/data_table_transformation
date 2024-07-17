@@ -1,15 +1,26 @@
 import streamlit as st
 import pandas as pd
-from transformers import pipeline
+from langchain_community.llms import LlamaCpp
+from langchain_core.callbacks import CallbackManager, StreamingStdOutCallbackHandler
 import io
 
-# Initialize the Mistral-7B text generation pipeline
+# Initialize LlamaCpp model
 @st.cache_resource
-def load_model():
-    return pipeline("text-generation", model="mistralai/Mistral-7B-v0.3")
+def load_llama_model():
+    callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
+    model_path = "/path/to/your/model/openorca-platypus2-13b.gguf.q4_0.bin"  # Update this to the correct path
+    llm = LlamaCpp(
+        model_path=model_path,
+        temperature=0.75,
+        max_tokens=2000,
+        top_p=1,
+        callback_manager=callback_manager,
+        verbose=True
+    )
+    return llm
 
 # Load the model
-text_gen_pipe = load_model()
+llama_model = load_llama_model()
 
 # Load the custom dataset into a DataFrame
 csv_data = """
@@ -38,7 +49,7 @@ st.dataframe(df)
 methods = {
     "Describe DataFrame": ("df.describe()", "Displays basic statistics for each column."),
     "Filter Data": ("df[df['Gender'] == 'Female']", "Filters the DataFrame to include only rows where the Gender is Female."),
-    "Select Specific Columns": ("df[['Name, Occupation, Salary']]", "Selects specific columns from the DataFrame."),
+    "Select Specific Columns": ("df[['Name', 'Occupation, Salary']]", "Selects specific columns from the DataFrame."),
     "Group By and Aggregate": ("df.groupby('Occupation').mean()", "Groups the DataFrame by Occupation and calculates the mean for each group."),
     "Add a New Column": ("df['Salary_in_K'] = df['Salary'] / 1000\ndf", "Adds a new column to the DataFrame by dividing the Salary by 1000."),
     "Sort Values": ("df.sort_values(by='Age', ascending=False)", "Sorts the DataFrame by Age in descending order."),
@@ -89,11 +100,11 @@ translate = st.button("Translate")
 if translate:
     if code and target_language:
         try:
-            # Translate the code using Mistral-7B pipeline
-            prompt = f"Translate the following Python pandas code to {target_language}:\n\n{code}\n\nThe translated code in {target_language} is:"
-            translated_code = text_gen_pipe(prompt, max_length=200)[0]['generated_text']
-            st.subheader(f"Translated Code to {target_language}")
-            st.code(translated_code, language='r' if target_language == "R (tidyverse)" else 'sql' if target_language == "SQL" else 'plain')
+            # Translate the code using LlamaCpp
+            question = f"Translate the following Python pandas code to {target_language}:\n\n{code}\n\nThe translated code in {target_language} is:"
+            llama_translation = llama_model.invoke(question)
+            st.subheader(f"Translated Code to {target_language} (LlamaCpp)")
+            st.code(llama_translation, language='r' if target_language == "R (tidyverse)" else 'sql' if target_language == "SQL" else 'plain')
         except Exception as e:
             st.error(f"Error translating code: {e}")
     else:

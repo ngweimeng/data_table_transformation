@@ -1,7 +1,6 @@
-pandas
-streamlit
-seaborn
-transformers
-torch
-mistral_inference
-python-dotenv
+streamlit==1.12.0
+pandas==1.3.3
+transformers==4.21.0
+torch==1.10.0
+langchain-core==0.0.1
+langchain-community==0.0.1
